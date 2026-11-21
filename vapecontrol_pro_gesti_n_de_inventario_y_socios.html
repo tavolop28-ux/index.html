@@ -1,0 +1,1850 @@
+<!DOCTYPE html>
+<html lang="es" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VapeControl Pro | Gestión Compartida</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Inter & JetBrains Mono for tabular numbers -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    colors: {
+                        cyber: {
+                            bg: '#0b0f19',
+                            card: '#111827',
+                            cardHover: '#161f33',
+                            border: '#1f2937',
+                            neon: '#00FF66',
+                            neonDim: 'rgba(0, 255, 102, 0.12)',
+                            cyan: '#06b6d4',
+                            cyanDim: 'rgba(6, 182, 212, 0.12)',
+                            purple: '#a855f7',
+                            purpleDim: 'rgba(168, 85, 247, 0.12)',
+                            danger: '#ef4444',
+                            warning: '#f59e0b'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #0b0f19;
+            color: #f3f4f6;
+            font-family: 'Inter', sans-serif;
+            overflow-x: hidden;
+        }
+        .tabular-nums {
+            font-variant-numeric: tabular-nums;
+        }
+        .neon-glow {
+            box-shadow: 0 0 18px rgba(0, 255, 102, 0.25);
+        }
+        .neon-text-glow {
+            text-shadow: 0 0 12px rgba(0, 255, 102, 0.45);
+        }
+        .cyan-glow {
+            box-shadow: 0 0 15px rgba(6, 182, 212, 0.2);
+        }
+        .purple-glow {
+            box-shadow: 0 0 15px rgba(168, 85, 247, 0.2);
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0b0f19;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #1f2937;
+            border-radius: 9999px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #374151;
+        }
+        /* Modal Animation */
+        @keyframes modalFadeIn {
+            from { opacity: 0; transform: scale(0.96) translateY(8px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+        .modal-animate {
+            animation: modalFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col selection:bg-cyber-neon selection:text-black">
+
+    <!-- Toast Notification Container -->
+    <div id="toast-container" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none px-4 sm:px-0"></div>
+
+    <!-- Top Navigation Bar -->
+    <header class="sticky top-0 z-30 bg-cyber-bg/90 backdrop-blur-md border-b border-cyber-border">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-2">
+            <!-- Brand -->
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-cyber-neonDim border border-cyber-neon/40 flex items-center justify-center text-cyber-neon neon-glow">
+                    <i data-lucide="wind" class="w-6 h-6"></i>
+                </div>
+                <div>
+                    <h1 class="font-extrabold text-lg sm:text-xl tracking-tight text-white flex items-center gap-2">
+                        VAPE<span class="text-cyber-neon neon-text-glow">CONTROL</span>
+                        <span class="hidden sm:inline-block text-[10px] font-mono uppercase tracking-wider px-2 py-0.5 rounded-full bg-cyber-card border border-cyber-border text-gray-400">50/50 Duo</span>
+                    </h1>
+                    <div class="flex items-center gap-2 text-xs text-gray-400">
+                        <span id="sync-dot" class="w-2 h-2 rounded-full bg-yellow-500 animate-pulse"></span>
+                        <span id="sync-status-text">Conectando nube...</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Global Actions -->
+            <div class="flex items-center gap-2 sm:gap-3">
+                <button onclick="openCorteModal()" class="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-cyber-card hover:bg-cyber-cardHover border border-cyber-border text-xs sm:text-sm font-semibold text-gray-200 transition active:scale-95">
+                    <i data-lucide="scale" class="w-4 h-4 text-cyber-neon"></i>
+                    <span class="hidden md:inline">Corte / Reparto</span>
+                    <span class="md:hidden">Corte</span>
+                </button>
+                
+                <button onclick="openDataModal()" class="p-2 rounded-xl bg-cyber-card hover:bg-cyber-cardHover border border-cyber-border text-gray-400 hover:text-white transition active:scale-95" title="Respaldo y Configuración">
+                    <i data-lucide="database" class="w-4 h-4 sm:w-5 sm:h-5"></i>
+                </button>
+
+                <button onclick="openSaleModal()" class="flex items-center gap-1.5 px-3.5 sm:px-4 py-2 rounded-xl bg-cyber-neon hover:bg-[#00e65c] text-black font-bold text-xs sm:text-sm shadow-lg neon-glow transition active:scale-95">
+                    <i data-lucide="zap" class="w-4 h-4 fill-current"></i>
+                    <span>Registrar Venta</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+
+        <!-- KPI Dashboard Grid -->
+        <section aria-label="Indicadores Clave">
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+                <!-- KPI 1: Ganancia Neta Real -->
+                <div class="bg-cyber-card border border-cyber-border rounded-2xl p-4 sm:p-5 relative overflow-hidden group">
+                    <div class="absolute -right-4 -top-4 w-20 h-20 bg-cyber-neon/10 rounded-full blur-xl group-hover:bg-cyber-neon/20 transition"></div>
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-xs font-medium text-gray-400 uppercase tracking-wider">Ganancia Neta</span>
+                        <div class="p-1.5 rounded-lg bg-cyber-neonDim text-cyber-neon">
+                            <i data-lucide="trending-up" class="w-4 h-4"></i>
+                        </div>
+                    </div>
+                    <div id="kpi-net-profit" class="text-2xl sm:text-3xl font-extrabold text-cyber-neon font-mono tabular-nums neon-text-glow">$0</div>
+                    <p id="kpi-total-sales" class="text-xs text-gray-400 mt-1 tabular-nums">Ventas Totales: $0</p>
+                </div>
+
+                <!-- KPI 2: Dinero en Caja (Cobrado) -->
+                <div class="bg-cyber-card border border-cyber-border rounded-2xl p-4 sm:p-5 relative overflow-hidden">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-xs font-medium text-gray-400 uppercase tracking-wider">Dinero en Caja</span>
+                        <div class="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-400">
+                            <i data-lucide="wallet" class="w-4 h-4"></i>
+                        </div>
+                    </div>
+                    <div id="kpi-cash-collected" class="text-2xl sm:text-3xl font-extrabold text-white font-mono tabular-nums">$0</div>
+                    <p id="kpi-cash-breakdown" class="text-xs text-gray-400 mt-1 tabular-nums">Efec: $0 • Transf: $0</p>
+                </div>
+
+                <!-- KPI 3: Por Cobrar (Fiados) -->
+                <div class="bg-cyber-card border border-cyber-border rounded-2xl p-4 sm:p-5 relative overflow-hidden">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-xs font-medium text-gray-400 uppercase tracking-wider">Fiados (Por Cobrar)</span>
+                        <div class="p-1.5 rounded-lg bg-amber-500/10 text-amber-400">
+                            <i data-lucide="clock" class="w-4 h-4"></i>
+                        </div>
+                    </div>
+                    <div id="kpi-pending-debt" class="text-2xl sm:text-3xl font-extrabold text-amber-400 font-mono tabular-nums">$0</div>
+                    <p id="kpi-debt-count" class="text-xs text-gray-400 mt-1">0 clientes pendientes</p>
+                </div>
+
+                <!-- KPI 4: Inversión Activa en Stock -->
+                <div class="bg-cyber-card border border-cyber-border rounded-2xl p-4 sm:p-5 relative overflow-hidden">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-xs font-medium text-gray-400 uppercase tracking-wider">Capital en Stock</span>
+                        <div class="p-1.5 rounded-lg bg-blue-500/10 text-blue-400">
+                            <i data-lucide="package" class="w-4 h-4"></i>
+                        </div>
+                    </div>
+                    <div id="kpi-active-stock-value" class="text-2xl sm:text-3xl font-extrabold text-white font-mono tabular-nums">$0</div>
+                    <p id="kpi-stock-units" class="text-xs text-gray-400 mt-1 tabular-nums">0 vapes disponibles</p>
+                </div>
+            </div>
+
+            <!-- Partner Balance Bar ("Tú" vs "Mi Compa") -->
+            <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
+                <!-- Partner 1: Tú -->
+                <div class="bg-cyber-card border border-cyber-cyan/30 rounded-2xl p-4 flex items-center justify-between cyan-glow">
+                    <div class="flex items-center gap-3">
+                        <div class="w-11 h-11 rounded-xl bg-cyber-cyanDim border border-cyber-cyan/40 flex items-center justify-center text-cyber-cyan font-bold text-lg">
+                            TÚ
+                        </div>
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <h3 class="font-bold text-white text-sm sm:text-base">Tu Caja en Mano</h3>
+                                <span class="text-[11px] px-2 py-0.5 rounded-full bg-cyber-cyanDim text-cyber-cyan font-medium">Socio 1</span>
+                            </div>
+                            <p class="text-xs text-gray-400 mt-0.5">
+                                Inv. aportada: <span id="yo-invested-display" class="text-gray-200 font-mono">$0</span>
+                                <button onclick="openInvestmentModal()" class="ml-1.5 text-cyber-cyan hover:underline font-medium">Editar</button>
+                            </p>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <div id="yo-cash-hand" class="text-xl sm:text-2xl font-extrabold text-cyber-cyan font-mono tabular-nums">$0</div>
+                        <span id="yo-sales-count" class="text-[11px] text-gray-400">0 ventas cobradas</span>
+                    </div>
+                </div>
+
+                <!-- Partner 2: Mi Compa -->
+                <div class="bg-cyber-card border border-cyber-purple/30 rounded-2xl p-4 flex items-center justify-between purple-glow">
+                    <div class="flex items-center gap-3">
+                        <div class="w-11 h-11 rounded-xl bg-cyber-purpleDim border border-cyber-purple/40 flex items-center justify-center text-cyber-purple font-bold text-lg">
+                            MC
+                        </div>
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <h3 class="font-bold text-white text-sm sm:text-base">Caja de Mi Compa</h3>
+                                <span class="text-[11px] px-2 py-0.5 rounded-full bg-cyber-purpleDim text-cyber-purple font-medium">Socio 2</span>
+                            </div>
+                            <p class="text-xs text-gray-400 mt-0.5">
+                                Inv. aportada: <span id="compa-invested-display" class="text-gray-200 font-mono">$0</span>
+                                <button onclick="openInvestmentModal()" class="ml-1.5 text-cyber-purple hover:underline font-medium">Editar</button>
+                            </p>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <div id="compa-cash-hand" class="text-xl sm:text-2xl font-extrabold text-cyber-purple font-mono tabular-nums">$0</div>
+                        <span id="compa-sales-count" class="text-[11px] text-gray-400">0 ventas cobradas</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Navigation Tabs -->
+        <div class="flex items-center justify-between border-b border-cyber-border overflow-x-auto">
+            <nav class="flex space-x-2 sm:space-x-6" aria-label="Secciones">
+                <button onclick="switchTab('inventory')" id="tab-inventory" class="tab-btn active-tab py-3 px-2 border-b-2 border-cyber-neon text-cyber-neon font-bold text-sm flex items-center gap-2 whitespace-nowrap transition">
+                    <i data-lucide="layers" class="w-4 h-4"></i>
+                    Inventario de Vapes
+                    <span id="badge-inventory-count" class="px-2 py-0.5 text-xs rounded-full bg-cyber-neonDim text-cyber-neon font-mono">0</span>
+                </button>
+                <button onclick="switchTab('movements')" id="tab-movements" class="tab-btn py-3 px-2 border-b-2 border-transparent text-gray-400 hover:text-gray-200 font-semibold text-sm flex items-center gap-2 whitespace-nowrap transition">
+                    <i data-lucide="receipt" class="w-4 h-4"></i>
+                    Ventas y Fiados
+                    <span id="badge-debts-count" class="px-2 py-0.5 text-xs rounded-full bg-amber-500/20 text-amber-400 font-mono hidden">0 fiados</span>
+                </button>
+            </nav>
+        </div>
+
+        <!-- TAB 1: INVENTORY CATALOG -->
+        <section id="section-inventory" class="space-y-4">
+            <!-- Filters & Add Product Bar -->
+            <div class="flex flex-col sm:flex-row gap-3 justify-between items-stretch sm:items-center">
+                <div class="flex flex-1 gap-2 flex-col sm:flex-row">
+                    <!-- Search -->
+                    <div class="relative flex-1 max-w-md">
+                        <i data-lucide="search" class="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2"></i>
+                        <input type="text" id="search-inventory" oninput="renderInventory()" placeholder="Buscar marca, sabor o puffs..." class="w-full pl-10 pr-4 py-2.5 bg-cyber-card border border-cyber-border rounded-xl text-sm text-white placeholder-gray-500 focus:outline-none focus:border-cyber-neon transition">
+                    </div>
+                    <!-- Brand Filter -->
+                    <select id="filter-brand" onchange="renderInventory()" class="px-3.5 py-2.5 bg-cyber-card border border-cyber-border rounded-xl text-sm text-gray-200 focus:outline-none focus:border-cyber-neon">
+                        <option value="ALL">Todas las marcas</option>
+                    </select>
+                    <!-- Stock Status Filter -->
+                    <select id="filter-stock" onchange="renderInventory()" class="px-3.5 py-2.5 bg-cyber-card border border-cyber-border rounded-xl text-sm text-gray-200 focus:outline-none focus:border-cyber-neon">
+                        <option value="ALL">Todo el stock</option>
+                        <option value="AVAILABLE">Disponibles (&gt;0)</option>
+                        <option value="LOW">Stock Bajo (&le;2)</option>
+                        <option value="OUT">Agotados (0)</option>
+                    </select>
+                </div>
+
+                <button onclick="openProductModal()" class="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-cyber-card hover:bg-cyber-cardHover border border-cyber-neon/50 text-cyber-neon font-bold text-sm transition active:scale-95">
+                    <i data-lucide="plus-circle" class="w-4 h-4"></i>
+                    <span>Nuevo Vape</span>
+                </button>
+            </div>
+
+            <!-- Inventory Grid -->
+            <div id="inventory-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                <!-- Populated dynamically -->
+            </div>
+
+            <!-- Empty State Inventory -->
+            <div id="inventory-empty" class="hidden bg-cyber-card border border-cyber-border rounded-2xl p-10 text-center">
+                <div class="w-14 h-14 rounded-2xl bg-cyber-neonDim text-cyber-neon flex items-center justify-center mx-auto mb-3">
+                    <i data-lucide="package-open" class="w-7 h-7"></i>
+                </div>
+                <h3 class="text-lg font-bold text-white">No hay vapes en esta vista</h3>
+                <p class="text-sm text-gray-400 max-w-md mx-auto mt-1">Agrega tu primer modelo de vape al inventario o ajusta los filtros de búsqueda.</p>
+                <button onclick="openProductModal()" class="mt-4 px-4 py-2 rounded-xl bg-cyber-neon text-black font-bold text-sm">
+                    + Agregar Primer Vape
+                </button>
+            </div>
+        </section>
+
+        <!-- TAB 2: MOVEMENTS & DEBTS (FIADOS) -->
+        <section id="section-movements" class="hidden space-y-4">
+            <!-- Movement Filter Pills -->
+            <div class="flex flex-wrap items-center justify-between gap-3">
+                <div class="flex items-center gap-2 bg-cyber-card p-1 rounded-xl border border-cyber-border">
+                    <button onclick="setMovementFilter('ALL')" id="mov-filter-ALL" class="mov-filter-btn px-3.5 py-1.5 rounded-lg text-xs font-bold bg-cyber-neon text-black transition">
+                        Todas
+                    </button>
+                    <button onclick="setMovementFilter('PAID')" id="mov-filter-PAID" class="mov-filter-btn px-3.5 py-1.5 rounded-lg text-xs font-semibold text-gray-400 hover:text-white transition">
+                        Pagadas
+                    </button>
+                    <button onclick="setMovementFilter('FIADO')" id="mov-filter-FIADO" class="mov-filter-btn px-3.5 py-1.5 rounded-lg text-xs font-semibold text-gray-400 hover:text-white transition flex items-center gap-1.5">
+                        <span>Fiados Pendientes</span>
+                        <span id="pill-debt-counter" class="px-1.5 py-0.2 rounded-full bg-amber-500/20 text-amber-400 font-mono text-[10px]">0</span>
+                    </button>
+                </div>
+
+                <div class="relative w-full sm:w-64">
+                    <i data-lucide="search" class="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
+                    <input type="text" id="search-movements" oninput="renderMovements()" placeholder="Buscar cliente o vape..." class="w-full pl-9 pr-3 py-2 bg-cyber-card border border-cyber-border rounded-xl text-xs text-white placeholder-gray-500 focus:outline-none focus:border-cyber-neon">
+                </div>
+            </div>
+
+            <!-- Movements List / Table -->
+            <div id="movements-list" class="space-y-3">
+                <!-- Populated dynamically -->
+            </div>
+
+            <!-- Empty State Movements -->
+            <div id="movements-empty" class="hidden bg-cyber-card border border-cyber-border rounded-2xl p-10 text-center">
+                <div class="w-14 h-14 rounded-2xl bg-gray-800 text-gray-400 flex items-center justify-center mx-auto mb-3">
+                    <i data-lucide="receipt" class="w-7 h-7"></i>
+                </div>
+                <h3 class="text-lg font-bold text-white">Sin movimientos registrados</h3>
+                <p class="text-sm text-gray-400 mt-1">Aquí aparecerán todas las ventas pagadas y los fiados pendientes por cobrar.</p>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- ===================================================================== -->
+    <!-- MODALS -->
+    <!-- ===================================================================== -->
+
+    <!-- 1. MODAL: ADD / EDIT PRODUCT -->
+    <div id="modal-product" class="fixed inset-0 z-50 hidden bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-cyber-card border border-cyber-border rounded-2xl max-w-md w-full p-6 modal-animate shadow-2xl">
+            <div class="flex items-center justify-between pb-3 border-b border-cyber-border">
+                <h2 id="modal-product-title" class="text-lg font-bold text-white flex items-center gap-2">
+                    <i data-lucide="plus-circle" class="w-5 h-5 text-cyber-neon"></i>
+                    Agregar Nuevo Vape
+                </h2>
+                <button onclick="closeModal('modal-product')" class="text-gray-400 hover:text-white p-1">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <form id="form-product" onsubmit="handleSaveProduct(event)" class="mt-4 space-y-4">
+                <input type="hidden" id="prod-id">
+                
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-400 mb-1">Marca *</label>
+                        <input type="text" id="prod-brand" required list="brand-suggestions" placeholder="Ej. Waka, Geek Bar" class="w-full px-3 py-2 bg-cyber-bg border border-cyber-border rounded-xl text-sm text-white focus:outline-none focus:border-cyber-neon">
+                        <datalist id="brand-suggestions">
+                            <option value="Waka">
+                            <option value="Geek Bar">
+                            <option value="Elfbar">
+                            <option value="Tyson 2.0">
+                            <option value="Lost Mary">
+                            <option value="Maskking">
+                            <option value="Fume">
+                        </datalist>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-400 mb-1">Puffs / Modelo</label>
+                        <input type="text" id="prod-puffs" placeholder="Ej. 10,000 Puffs" class="w-full px-3 py-2 bg-cyber-bg border border-cyber-border rounded-xl text-sm text-white focus:outline-none focus:border-cyber-neon">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-gray-400 mb-1">Sabor *</label>
+                    <input type="text" id="prod-flavor" required placeholder="Ej. Watermelon Ice, Strawberry Kiwi" class="w-full px-3 py-2 bg-cyber-bg border border-cyber-border rounded-xl text-sm text-white focus:outline-none focus:border-cyber-neon">
+                </div>
+
+                <div class="grid grid-cols-3 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-400 mb-1">Costo Compra ($) *</label>
+                        <input type="number" id="prod-cost" required min="0" step="any" placeholder="180" class="w-full px-3 py-2 bg-cyber-bg border border-cyber-border rounded-xl text-sm font-mono text-white focus:outline-none focus:border-cyber-neon">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-400 mb-1">Precio Venta ($) *</label>
+                        <input type="number" id="prod-price" required min="0" step="any" placeholder="320" class="w-full px-3 py-2 bg-cyber-bg border border-cyber-border rounded-xl text-sm font-mono text-white focus:outline-none focus:border-cyber-neon">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-400 mb-1">Stock *</label>
+                        <input type="number" id="prod-stock" required min="0" step="1" placeholder="5" class="w-full px-3 py-2 bg-cyber-bg border border-cyber-border rounded-xl text-sm font-mono text-white focus:outline-none focus:border-cyber-neon">
+                    </div>
+                </div>
+
+                <div class="pt-2 flex justify-end gap-2">
+                    <button type="button" onclick="closeModal('modal-product')" class="px-4 py-2 rounded-xl bg-gray-800 hover:bg-gray-700 text-gray-300 text-sm font-semibold">Cancelar</button>
+                    <button type="submit" class="px-5 py-2 rounded-xl bg-cyber-neon hover:bg-[#00e65c] text-black font-bold text-sm neon-glow">Guardar Vape</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 2. MODAL: REGISTER SALE / FIADO -->
+    <div id="modal-sale" class="fixed inset-0 z-50 hidden bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-cyber-card border border-cyber-border rounded-2xl max-w-md w-full p-6 modal-animate shadow-2xl max-h-[92vh] overflow-y-auto">
+            <div class="flex items-center justify-between pb-3 border-b border-cyber-border">
+                <h2 class="text-lg font-bold text-white flex items-center gap-2">
+                    <i data-lucide="zap" class="w-5 h-5 text-cyber-neon"></i>
+                    Registrar Venta / Fiado
+                </h2>
+                <button onclick="closeModal('modal-sale')" class="text-gray-400 hover:text-white p-1">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <form id="form-sale" onsubmit="handleRegisterSale(event)" class="mt-4 space-y-4">
+                <!-- Product Selector -->
+                <div>
+                    <label class="block text-xs font-semibold text-gray-400 mb-1">Seleccionar Vape *</label>
+                    <select id="sale-product-id" required onchange="onSaleProductChange()" class="w-full px-3 py-2.5 bg-cyber-bg border border-cyber-border rounded-xl text-sm text-white focus:outline-none focus:border-cyber-neon">
+                        <option value="">-- Elige un vape con stock --</option>
+                    </select>
+                    <p id="sale-stock-hint" class="text-xs text-gray-400 mt-1"></p>
+                </div>
+
+                <!-- Quantity & Final Total Price -->
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-400 mb-1">Cantidad *</label>
+                        <input type="number" id="sale-qty" required min="1" value="1" oninput="updateSaleSuggestedTotal()" class="w-full px-3 py-2 bg-cyber-bg border border-cyber-border rounded-xl text-sm font-mono text-white focus:outline-none focus:border-cyber-neon">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-400 mb-1">Precio Total Cobrado ($) *</label>
+                        <input type="number" id="sale-total-price" required min="0" step="any" oninput="updateSaleProfitPreview()" class="w-full px-3 py-2 bg-cyber-bg border border-cyber-border rounded-xl text-sm font-mono font-bold text-cyber-neon focus:outline-none focus:border-cyber-neon">
+                    </div>
+                </div>
+
+                <!-- Live Profit Preview -->
+                <div id="sale-profit-box" class="px-3 py-2 rounded-xl bg-cyber-bg border border-cyber-border flex items-center justify-between text-xs">
+                    <span class="text-gray-400">Ganancia neta de esta venta:</span>
+                    <span id="sale-profit-preview" class="font-mono font-bold text-cyber-neon">$0</span>
+                </div>
+
+                <!-- Partner Selector ("Yo" vs "Mi Compa") -->
+                <div>
+                    <label class="block text-xs font-semibold text-gray-400 mb-1.5">¿Quién realizó la venta / tiene el dinero? *</label>
+                    <div class="grid grid-cols-2 gap-2.5">
+                        <label class="cursor-pointer">
+                            <input type="radio" name="sale-partner" value="YO" checked class="peer sr-only">
+                            <div class="p-3 rounded-xl border border-cyber-border bg-cyber-bg peer-checked:border-cyber-cyan peer-checked:bg-cyber-cyanDim text-center transition">
+                                <span class="block font-bold text-sm text-white">Yo (Tú)</span>
+                                <span class="text-[11px] text-cyber-cyan">Suma a tu caja</span>
+                            </div>
+                        </label>
+                        <label class="cursor-pointer">
+                            <input type="radio" name="sale-partner" value="COMPA" class="peer sr-only">
+                            <div class="p-3 rounded-xl border border-cyber-border bg-cyber-bg peer-checked:border-cyber-purple peer-checked:bg-cyber-purpleDim text-center transition">
+                                <span class="block font-bold text-sm text-white">Mi Compa</span>
+                                <span class="text-[11px] text-cyber-purple">Suma a su caja</span>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Payment Method / Status -->
+                <div>
+                    <label class="block text-xs font-semibold text-gray-400 mb-1.5">Estado / Método de Pago *</label>
+                    <div class="grid grid-cols-3 gap-2">
+                        <label class="cursor-pointer">
+                            <input type="radio" name="sale-payment" value="EFECTIVO" checked onchange="toggleCustomerField()" class="peer sr-only">
+                            <div class="p-2.5 rounded-xl border border-cyber-border bg-cyber-bg peer-checked:border-cyber-neon peer-checked:bg-cyber-neonDim text-center transition">
+                                <span class="block font-bold text-xs text-white">Efectivo</span>
+                                <span class="text-[10px] text-emerald-400">Pagado</span>
+                            </div>
+                        </label>
+                        <label class="cursor-pointer">
+                            <input type="radio" name="sale-payment" value="TRANSFERENCIA" onchange="toggleCustomerField()" class="peer sr-only">
+                            <div class="p-2.5 rounded-xl border border-cyber-border bg-cyber-bg peer-checked:border-cyber-neon peer-checked:bg-cyber-neonDim text-center transition">
+                                <span class="block font-bold text-xs text-white">Transf.</span>
+                                <span class="text-[10px] text-emerald-400">Pagado</span>
+                            </div>
+                        </label>
+                        <label class="cursor-pointer">
+                            <input type="radio" name="sale-payment" value="FIADO" onchange="toggleCustomerField()" class="peer sr-only">
+                            <div class="p-2.5 rounded-xl border border-cyber-border bg-cyber-bg peer-checked:border-amber-400 peer-checked:bg-amber-500/15 text-center transition">
+                                <span class="block font-bold text-xs text-amber-400">Fiado</span>
+                                <span class="text-[10px] text-amber-300">Pendiente</span>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Customer Name (Required if Fiado, Optional otherwise) -->
+                <div id="sale-customer-wrapper">
+                    <label id="sale-customer-label" class="block text-xs font-semibold text-gray-400 mb-1">Nombre del Cliente (Opcional)</label>
+                    <input type="text" id="sale-customer" placeholder="Ej. Carlos / Primo de Juan" class="w-full px-3 py-2 bg-cyber-bg border border-cyber-border rounded-xl text-sm text-white focus:outline-none focus:border-cyber-neon">
+                </div>
+
+                <div class="pt-2 flex justify-end gap-2">
+                    <button type="button" onclick="closeModal('modal-sale')" class="px-4 py-2 rounded-xl bg-gray-800 hover:bg-gray-700 text-gray-300 text-sm font-semibold">Cancelar</button>
+                    <button type="submit" class="px-5 py-2 rounded-xl bg-cyber-neon hover:bg-[#00e65c] text-black font-bold text-sm neon-glow">Confirmar Venta</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 3. MODAL: SETTLE FIADO (MARK AS PAID) -->
+    <div id="modal-settle-debt" class="fixed inset-0 z-50 hidden bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-cyber-card border border-cyber-border rounded-2xl max-w-sm w-full p-6 modal-animate shadow-2xl">
+            <div class="flex items-center justify-between pb-3 border-b border-cyber-border">
+                <h2 class="text-lg font-bold text-white flex items-center gap-2">
+                    <i data-lucide="check-circle-2" class="w-5 h-5 text-cyber-neon"></i>
+                    Cobrar Fiado
+                </h2>
+                <button onclick="closeModal('modal-settle-debt')" class="text-gray-400 hover:text-white p-1">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <form onsubmit="handleSettleDebt(event)" class="mt-4 space-y-4">
+                <input type="hidden" id="settle-sale-id">
+                <div class="p-3 rounded-xl bg-cyber-bg border border-cyber-border">
+                    <p class="text-xs text-gray-400">Cliente deudor:</p>
+                    <p id="settle-customer-name" class="font-bold text-white text-base"></p>
+                    <p id="settle-amount-display" class="font-mono font-extrabold text-amber-400 text-lg mt-1"></p>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-gray-400 mb-1.5">¿Quién recibió el dinero?</label>
+                    <div class="grid grid-cols-2 gap-2.5">
+                        <label class="cursor-pointer">
+                            <input type="radio" name="settle-partner" value="YO" checked class="peer sr-only">
+                            <div class="p-2.5 rounded-xl border border-cyber-border bg-cyber-bg peer-checked:border-cyber-cyan peer-checked:bg-cyber-cyanDim text-center">
+                                <span class="font-bold text-xs text-white">Yo (Tú)</span>
+                            </div>
+                        </label>
+                        <label class="cursor-pointer">
+                            <input type="radio" name="settle-partner" value="COMPA" class="peer sr-only">
+                            <div class="p-2.5 rounded-xl border border-cyber-border bg-cyber-bg peer-checked:border-cyber-purple peer-checked:bg-cyber-purpleDim text-center">
+                                <span class="font-bold text-xs text-white">Mi Compa</span>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-gray-400 mb-1.5">¿Cómo pagó?</label>
+                    <div class="grid grid-cols-2 gap-2.5">
+                        <label class="cursor-pointer">
+                            <input type="radio" name="settle-method" value="EFECTIVO" checked class="peer sr-only">
+                            <div class="p-2.5 rounded-xl border border-cyber-border bg-cyber-bg peer-checked:border-cyber-neon peer-checked:bg-cyber-neonDim text-center">
+                                <span class="font-bold text-xs text-white">Efectivo</span>
+                            </div>
+                        </label>
+                        <label class="cursor-pointer">
+                            <input type="radio" name="settle-method" value="TRANSFERENCIA" class="peer sr-only">
+                            <div class="p-2.5 rounded-xl border border-cyber-border bg-cyber-bg peer-checked:border-cyber-neon peer-checked:bg-cyber-neonDim text-center">
+                                <span class="font-bold text-xs text-white">Transferencia</span>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="pt-2 flex justify-end gap-2">
+                    <button type="button" onclick="closeModal('modal-settle-debt')" class="px-4 py-2 rounded-xl bg-gray-800 text-gray-300 text-sm font-semibold">Cancelar</button>
+                    <button type="submit" class="px-5 py-2 rounded-xl bg-cyber-neon text-black font-bold text-sm neon-glow">Registrar Cobro</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 4. MODAL: CORTE DE CAJA / REPARTO 50/50 -->
+    <div id="modal-corte" class="fixed inset-0 z-50 hidden bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-cyber-card border border-cyber-border rounded-2xl max-w-lg w-full p-6 modal-animate shadow-2xl max-h-[92vh] overflow-y-auto">
+            <div class="flex items-center justify-between pb-3 border-b border-cyber-border">
+                <h2 class="text-lg font-bold text-white flex items-center gap-2">
+                    <i data-lucide="scale" class="w-5 h-5 text-cyber-neon"></i>
+                    Corte de Caja y Reparto 50/50
+                </h2>
+                <button onclick="closeModal('modal-corte')" class="text-gray-400 hover:text-white p-1">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <div class="mt-4 space-y-4">
+                <!-- Global Summary -->
+                <div class="grid grid-cols-3 gap-2.5 text-center">
+                    <div class="p-3 rounded-xl bg-cyber-bg border border-cyber-border">
+                        <span class="block text-[11px] text-gray-400">Total Cobrado</span>
+                        <span id="corte-total-collected" class="font-mono font-bold text-base sm:text-lg text-white">$0</span>
+                    </div>
+                    <div class="p-3 rounded-xl bg-cyber-bg border border-cyber-border">
+                        <span class="block text-[11px] text-gray-400">Costo Vendido</span>
+                        <span id="corte-cost-recovered" class="font-mono font-bold text-base sm:text-lg text-blue-400">$0</span>
+                    </div>
+                    <div class="p-3 rounded-xl bg-cyber-neonDim border border-cyber-neon/40">
+                        <span class="block text-[11px] text-cyber-neon">Ganancia Cobrada</span>
+                        <span id="corte-net-profit" class="font-mono font-extrabold text-base sm:text-lg text-cyber-neon">$0</span>
+                    </div>
+                </div>
+
+                <!-- Breakdown per Partner -->
+                <div class="p-4 rounded-xl bg-cyber-bg border border-cyber-border space-y-3 text-sm">
+                    <h3 class="font-bold text-gray-200 text-xs uppercase tracking-wider">Desglose por Socio (Solo dinero cobrado)</h3>
+                    
+                    <div class="flex justify-between items-center py-1.5 border-b border-cyber-border/60">
+                        <span class="text-gray-400">Ganancia libre para cada socio (50%):</span>
+                        <span id="corte-half-profit" class="font-mono font-bold text-cyber-neon">$0</span>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3 pt-1">
+                        <!-- Tú -->
+                        <div class="p-3 rounded-xl bg-cyber-card border border-cyber-cyan/30 space-y-1">
+                            <span class="text-xs font-bold text-cyber-cyan block">TÚ (Socio 1)</span>
+                            <div class="flex justify-between text-xs">
+                                <span class="text-gray-400">Tienes en caja:</span>
+                                <span id="corte-yo-has" class="font-mono text-white">$0</span>
+                            </div>
+                            <div class="flex justify-between text-xs">
+                                <span class="text-gray-400">Inv. aportada:</span>
+                                <span id="corte-yo-inv" class="font-mono text-gray-300">$0</span>
+                            </div>
+                            <div class="flex justify-between text-xs pt-1 border-t border-cyber-border">
+                                <span class="text-gray-300 font-semibold">Te corresponde:</span>
+                                <span id="corte-yo-target" class="font-mono font-bold text-cyber-cyan">$0</span>
+                            </div>
+                        </div>
+
+                        <!-- Mi Compa -->
+                        <div class="p-3 rounded-xl bg-cyber-card border border-cyber-purple/30 space-y-1">
+                            <span class="text-xs font-bold text-cyber-purple block">MI COMPA (Socio 2)</span>
+                            <div class="flex justify-between text-xs">
+                                <span class="text-gray-400">Tiene en caja:</span>
+                                <span id="corte-compa-has" class="font-mono text-white">$0</span>
+                            </div>
+                            <div class="flex justify-between text-xs">
+                                <span class="text-gray-400">Inv. aportada:</span>
+                                <span id="corte-compa-inv" class="font-mono text-gray-300">$0</span>
+                            </div>
+                            <div class="flex justify-between text-xs pt-1 border-t border-cyber-border">
+                                <span class="text-gray-300 font-semibold">Le corresponde:</span>
+                                <span id="corte-compa-target" class="font-mono font-bold text-cyber-purple">$0</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Actionable Settlement Verdict -->
+                <div id="corte-verdict-box" class="p-4 rounded-xl bg-cyber-neonDim border border-cyber-neon/50 text-center">
+                    <span class="text-[11px] uppercase tracking-wider font-bold text-cyber-neon block mb-1">Ajuste para quedar tablas</span>
+                    <p id="corte-verdict-text" class="text-base sm:text-lg font-extrabold text-white">Calculando...</p>
+                    <p id="corte-verdict-sub" class="text-xs text-gray-300 mt-1"></p>
+                </div>
+
+                <div class="flex justify-between items-center pt-2">
+                    <button onclick="openInvestmentModal()" class="text-xs text-gray-400 hover:text-white underline">Ajustar inversión inicial</button>
+                    <button onclick="closeModal('modal-corte')" class="px-5 py-2 rounded-xl bg-gray-800 hover:bg-gray-700 text-white font-semibold text-sm">Cerrar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 5. MODAL: PARTNER CAPITAL INVESTMENT -->
+    <div id="modal-investment" class="fixed inset-0 z-50 hidden bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-cyber-card border border-cyber-border rounded-2xl max-w-sm w-full p-6 modal-animate shadow-2xl">
+            <div class="flex items-center justify-between pb-3 border-b border-cyber-border">
+                <h2 class="text-lg font-bold text-white flex items-center gap-2">
+                    <i data-lucide="coins" class="w-5 h-5 text-cyber-neon"></i>
+                    Inversión por Socio
+                </h2>
+                <button onclick="closeModal('modal-investment')" class="text-gray-400 hover:text-white p-1">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <p class="text-xs text-gray-400 mt-3">Indica cuánto dinero puso cada quien de su bolsa para comprar mercancía. Esto se usa en el Corte de Caja para recuperar inversión antes de repartir ganancias.</p>
+
+            <form onsubmit="handleSaveInvestment(event)" class="mt-4 space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-cyber-cyan mb-1">Inversión aportada por TÚ ($)</label>
+                    <input type="number" id="input-yo-invested" required min="0" step="any" class="w-full px-3 py-2 bg-cyber-bg border border-cyber-border rounded-xl text-sm font-mono text-white focus:outline-none focus:border-cyber-cyan">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-cyber-purple mb-1">Inversión aportada por MI COMPA ($)</label>
+                    <input type="number" id="input-compa-invested" required min="0" step="any" class="w-full px-3 py-2 bg-cyber-bg border border-cyber-border rounded-xl text-sm font-mono text-white focus:outline-none focus:border-cyber-purple">
+                </div>
+
+                <div class="pt-2 flex justify-end gap-2">
+                    <button type="button" onclick="closeModal('modal-investment')" class="px-4 py-2 rounded-xl bg-gray-800 text-gray-300 text-sm font-semibold">Cancelar</button>
+                    <button type="submit" class="px-5 py-2 rounded-xl bg-cyber-neon text-black font-bold text-sm neon-glow">Guardar Aportes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 6. MODAL: BACKUP, EXPORT & RESET -->
+    <div id="modal-data" class="fixed inset-0 z-50 hidden bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-cyber-card border border-cyber-border rounded-2xl max-w-md w-full p-6 modal-animate shadow-2xl">
+            <div class="flex items-center justify-between pb-3 border-b border-cyber-border">
+                <h2 class="text-lg font-bold text-white flex items-center gap-2">
+                    <i data-lucide="database" class="w-5 h-5 text-cyber-neon"></i>
+                    Respaldo y Sincronización
+                </h2>
+                <button onclick="closeModal('modal-data')" class="text-gray-400 hover:text-white p-1">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <div class="mt-4 space-y-4">
+                <div class="p-3 rounded-xl bg-cyber-bg border border-cyber-border text-xs space-y-1">
+                    <div class="flex items-center justify-between">
+                        <span class="text-gray-400">Estado de Nube:</span>
+                        <span id="modal-sync-badge" class="font-bold text-cyber-neon">Sincronizado</span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-gray-400">Sala Compartida ID:</span>
+                        <span id="modal-room-id" class="font-mono text-gray-300 truncate max-w-[180px]">--</span>
+                    </div>
+                </div>
+
+                <div class="space-y-2">
+                    <label class="block text-xs font-semibold text-gray-400">Exportar Respaldo</label>
+                    <div class="grid grid-cols-2 gap-2.5">
+                        <button onclick="exportDataJSON()" class="flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl bg-cyber-bg hover:bg-gray-800 border border-cyber-border text-xs font-bold text-white transition">
+                            <i data-lucide="file-json" class="w-4 h-4 text-cyber-cyan"></i>
+                            Descargar JSON
+                        </button>
+                        <button onclick="exportSalesCSV()" class="flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl bg-cyber-bg hover:bg-gray-800 border border-cyber-border text-xs font-bold text-white transition">
+                            <i data-lucide="file-spreadsheet" class="w-4 h-4 text-cyber-neon"></i>
+                            Ventas en CSV
+                        </button>
+                    </div>
+                </div>
+
+                <div class="pt-3 border-t border-cyber-border">
+                    <label class="block text-xs font-semibold text-red-400 mb-2">Zona de Peligro</label>
+                    <button id="btn-reset-confirm" onclick="handleResetDatabase()" class="w-full py-2.5 px-4 rounded-xl bg-red-500/10 hover:bg-red-500/20 border border-red-500/40 text-red-400 text-xs font-bold transition">
+                        Reiniciar Todo el Negocio (Borrar Datos)
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 7. MODAL: GENERIC CONFIRMATION -->
+    <div id="modal-confirm" class="fixed inset-0 z-50 hidden bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-cyber-card border border-cyber-border rounded-2xl max-w-sm w-full p-6 modal-animate shadow-2xl">
+            <h3 id="confirm-title" class="text-lg font-bold text-white">¿Confirmar acción?</h3>
+            <p id="confirm-message" class="text-sm text-gray-400 mt-2"></p>
+            <div class="mt-5 flex justify-end gap-2">
+                <button onclick="closeModal('modal-confirm')" class="px-4 py-2 rounded-xl bg-gray-800 text-gray-300 text-sm font-semibold">Cancelar</button>
+                <button id="confirm-yes-btn" class="px-4 py-2 rounded-xl bg-red-600 hover:bg-red-500 text-white text-sm font-bold">Sí, continuar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===================================================================== -->
+    <!-- APPLICATION LOGIC & FIREBASE REALTIME SYNC -->
+    <!-- ===================================================================== -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDoc, updateDoc, deleteDoc, onSnapshot, collection, addDoc, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Global Application State
+        window.appState = {
+            products: [],
+            sales: [],
+            settings: {
+                yoInvested: 0,
+                compaInvested: 0
+            },
+            currentTab: 'inventory',
+            movementFilter: 'ALL',
+            user: null,
+            isOfflineDemo: false
+        };
+
+        // Firebase References
+        let db = null;
+        let auth = null;
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'vape-control-shared';
+
+        // Format Currency Helper
+        window.formatMoney = (amount) => {
+            const num = Number(amount) || 0;
+            return '$' + num.toLocaleString('es-MX', { minimumFractionDigits: num % 1 === 0 ? 0 : 2, maximumFractionDigits: 2 });
+        };
+
+        // Toast Notification System (Replaces alert())
+        window.showToast = (message, type = 'success') => {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            const colors = {
+                success: 'border-cyber-neon/60 bg-cyber-card text-white',
+                warning: 'border-amber-500/60 bg-cyber-card text-amber-300',
+                error: 'border-red-500/60 bg-cyber-card text-red-300'
+            };
+            const icons = {
+                success: '<i data-lucide="check-circle" class="w-4 h-4 text-cyber-neon shrink-0"></i>',
+                warning: '<i data-lucide="alert-triangle" class="w-4 h-4 text-amber-400 shrink-0"></i>',
+                error: '<i data-lucide="x-circle" class="w-4 h-4 text-red-400 shrink-0"></i>'
+            };
+
+            toast.className = `pointer-events-auto flex items-center gap-2.5 px-4 py-3 rounded-xl border shadow-xl text-xs sm:text-sm font-medium transition-all duration-300 transform translate-y-2 opacity-0 ${colors[type] || colors.success}`;
+            toast.innerHTML = `${icons[type] || icons.success}<span>${message}</span>`;
+            container.appendChild(toast);
+            lucide.createIcons();
+
+            requestAnimationFrame(() => {
+                toast.classList.remove('translate-y-2', 'opacity-0');
+            });
+
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-2');
+                setTimeout(() => toast.remove(), 300);
+            }, 3200);
+        };
+
+        // Initialize Firebase & Realtime Listeners
+        async function initFirebase() {
+            try {
+                if (typeof __firebase_config === 'undefined' || !__firebase_config) {
+                    throw new Error("Configuración de Firebase no disponible");
+                }
+                const firebaseConfig = JSON.parse(__firebase_config);
+                const app = initializeApp(firebaseConfig);
+                auth = getAuth(app);
+                db = getFirestore(app);
+
+                document.getElementById('modal-room-id').textContent = appId;
+
+                // Authenticate First (Rule 3)
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+
+                onAuthStateChanged(auth, (user) => {
+                    if (user) {
+                        window.appState.user = user;
+                        setSyncStatus('online', 'Sincronizado en vivo');
+                        setupRealtimeListeners();
+                    }
+                });
+            } catch (err) {
+                console.warn("Modo local de respaldo activado:", err);
+                window.appState.isOfflineDemo = true;
+                setSyncStatus('offline', 'Modo Local (Sin nube)');
+                seedInitialDemoDataIfEmpty();
+                recalculateAll();
+            }
+        }
+
+        function setSyncStatus(state, text) {
+            const dot = document.getElementById('sync-dot');
+            const label = document.getElementById('sync-status-text');
+            const modalBadge = document.getElementById('modal-sync-badge');
+
+            label.textContent = text;
+            if (modalBadge) modalBadge.textContent = text;
+
+            dot.classList.remove('bg-yellow-500', 'bg-cyber-neon', 'bg-red-500', 'animate-pulse');
+            if (state === 'online') {
+                dot.classList.add('bg-cyber-neon');
+            } else if (state === 'syncing') {
+                dot.classList.add('bg-yellow-500', 'animate-pulse');
+            } else {
+                dot.classList.add('bg-red-500');
+            }
+        }
+
+        // Strict Path Helpers (Rule 1: /artifacts/{appId}/public/data/{collectionName})
+        const getPublicCol = (colName) => collection(db, 'artifacts', appId, 'public', 'data', colName);
+        const getPublicDoc = (colName, docId) => doc(db, 'artifacts', appId, 'public', 'data', colName, docId);
+
+        function setupRealtimeListeners() {
+            if (!window.appState.user) return;
+
+            // 1. Products Listener
+            onSnapshot(getPublicCol('vape_products'), (snapshot) => {
+                const items = [];
+                snapshot.forEach(docSnap => {
+                    items.push({ id: docSnap.id, ...docSnap.data() });
+                });
+                // Sort in JS memory (Rule 2)
+                items.sort((a, b) => (a.brand || '').localeCompare(b.brand || ''));
+                window.appState.products = items;
+                updateBrandFilterOptions();
+                recalculateAll();
+            }, (error) => {
+                console.error("Error leyendo inventario:", error);
+                showToast("Error de sincronización en inventario", "error");
+            });
+
+            // 2. Sales Listener
+            onSnapshot(getPublicCol('vape_sales'), (snapshot) => {
+                const salesList = [];
+                snapshot.forEach(docSnap => {
+                    salesList.push({ id: docSnap.id, ...docSnap.data() });
+                });
+                // Sort newest first in JS memory (Rule 2)
+                salesList.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+                window.appState.sales = salesList;
+                recalculateAll();
+            }, (error) => {
+                console.error("Error leyendo ventas:", error);
+                showToast("Error de sincronización en ventas", "error");
+            });
+
+            // 3. Shared Partner Settings Listener
+            onSnapshot(getPublicDoc('vape_settings', 'partners_config'), (docSnap) => {
+                if (docSnap.exists()) {
+                    window.appState.settings = {
+                        yoInvested: Number(docSnap.data().yoInvested) || 0,
+                        compaInvested: Number(docSnap.data().compaInvested) || 0
+                    };
+                } else {
+                    // Initialize default settings doc
+                    setDoc(getPublicDoc('vape_settings', 'partners_config'), {
+                        yoInvested: 0,
+                        compaInvested: 0
+                    }).catch(() => {});
+                }
+                recalculateAll();
+            }, (error) => {
+                console.error("Error leyendo configuración de socios:", error);
+            });
+        }
+
+        function seedInitialDemoDataIfEmpty() {
+            if (window.appState.products.length === 0) {
+                window.appState.products = [
+                    { id: 'demo-1', brand: 'Waka', puffs: '10,000 Puffs', flavor: 'Watermelon Chill', cost: 185, price: 320, stock: 6 },
+                    { id: 'demo-2', brand: 'Geek Bar', puffs: '15,000 Puffs', flavor: 'Blue Razz Ice', cost: 210, price: 360, stock: 2 },
+                    { id: 'demo-3', brand: 'Elfbar', puffs: '5,000 Puffs', flavor: 'Strawberry Kiwi', cost: 140, price: 250, stock: 0 }
+                ];
+                window.appState.settings = { yoInvested: 1000, compaInvested: 1000 };
+                updateBrandFilterOptions();
+            }
+        }
+
+        // =====================================================================
+        // CORE CALCULATIONS & UI RENDERING
+        // =====================================================================
+        window.recalculateAll = () => {
+            const { products, sales, settings } = window.appState;
+
+            // 1. Active Stock Valuation
+            let activeStockValue = 0;
+            let totalUnits = 0;
+            products.forEach(p => {
+                const qty = Math.max(0, Number(p.stock) || 0);
+                activeStockValue += qty * (Number(p.cost) || 0);
+                totalUnits += qty;
+            });
+
+            // 2. Sales, Profits, Cash in Hand, and Debts
+            let totalSalesRevenue = 0;
+            let totalNetProfit = 0;
+            let cashCollectedTotal = 0;
+            let cashEfectivo = 0;
+            let cashTransfer = 0;
+            let pendingDebtTotal = 0;
+            let pendingDebtCount = 0;
+
+            let yoCash = 0;
+            let yoSalesCount = 0;
+            let compaCash = 0;
+            let compaSalesCount = 0;
+
+            // For Corte de Caja (only realized/paid sales)
+            let realizedCostRecovered = 0;
+            let realizedProfit = 0;
+
+            sales.forEach(s => {
+                const amount = Number(s.totalPrice) || 0;
+                const cost = Number(s.totalCost) || 0;
+                const profit = amount - cost;
+
+                totalSalesRevenue += amount;
+                totalNetProfit += profit;
+
+                if (s.status === 'FIADO') {
+                    pendingDebtTotal += amount;
+                    pendingDebtCount++;
+                } else {
+                    // Paid sale
+                    cashCollectedTotal += amount;
+                    realizedCostRecovered += cost;
+                    realizedProfit += profit;
+
+                    if (s.paymentMethod === 'TRANSFERENCIA') {
+                        cashTransfer += amount;
+                    } else {
+                        cashEfectivo += amount;
+                    }
+
+                    if (s.partner === 'COMPA') {
+                        compaCash += amount;
+                        compaSalesCount++;
+                    } else {
+                        yoCash += amount;
+                        yoSalesCount++;
+                    }
+                }
+            });
+
+            // Update KPI Cards
+            document.getElementById('kpi-net-profit').textContent = formatMoney(totalNetProfit);
+            document.getElementById('kpi-total-sales').textContent = `Ventas Totales: ${formatMoney(totalSalesRevenue)}`;
+
+            document.getElementById('kpi-cash-collected').textContent = formatMoney(cashCollectedTotal);
+            document.getElementById('kpi-cash-breakdown').textContent = `Efec: ${formatMoney(cashEfectivo)} • Transf: ${formatMoney(cashTransfer)}`;
+
+            document.getElementById('kpi-pending-debt').textContent = formatMoney(pendingDebtTotal);
+            document.getElementById('kpi-debt-count').textContent = `${pendingDebtCount} ${pendingDebtCount === 1 ? 'cliente pendiente' : 'clientes pendientes'}`;
+
+            document.getElementById('kpi-active-stock-value').textContent = formatMoney(activeStockValue);
+            document.getElementById('kpi-stock-units').textContent = `${totalUnits} ${totalUnits === 1 ? 'vape disponible' : 'vapes disponibles'}`;
+
+            // Update Partner Cards
+            document.getElementById('yo-cash-hand').textContent = formatMoney(yoCash);
+            document.getElementById('yo-sales-count').textContent = `${yoSalesCount} ventas cobradas`;
+            document.getElementById('yo-invested-display').textContent = formatMoney(settings.yoInvested);
+
+            document.getElementById('compa-cash-hand').textContent = formatMoney(compaCash);
+            document.getElementById('compa-sales-count').textContent = `${compaSalesCount} ventas cobradas`;
+            document.getElementById('compa-invested-display').textContent = formatMoney(settings.compaInvested);
+
+            // Update Badges
+            document.getElementById('badge-inventory-count').textContent = products.length;
+            const badgeDebts = document.getElementById('badge-debts-count');
+            const pillDebts = document.getElementById('pill-debt-counter');
+            pillDebts.textContent = pendingDebtCount;
+            if (pendingDebtCount > 0) {
+                badgeDebts.textContent = `${pendingDebtCount} fiados`;
+                badgeDebts.classList.remove('hidden');
+            } else {
+                badgeDebts.classList.add('hidden');
+            }
+
+            // Store calculated metrics for Corte Modal
+            window.corteMetrics = {
+                cashCollectedTotal,
+                realizedCostRecovered,
+                realizedProfit,
+                yoCash,
+                compaCash,
+                yoInvested: settings.yoInvested,
+                compaInvested: settings.compaInvested
+            };
+
+            renderInventory();
+            renderMovements();
+        };
+
+        function updateBrandFilterOptions() {
+            const select = document.getElementById('filter-brand');
+            const currentVal = select.value;
+            const brands = [...new Set(window.appState.products.map(p => p.brand).filter(Boolean))].sort();
+            
+            select.innerHTML = '<option value="ALL">Todas las marcas</option>';
+            brands.forEach(b => {
+                const opt = document.createElement('option');
+                opt.value = b;
+                opt.textContent = b;
+                select.appendChild(opt);
+            });
+            if (brands.includes(currentVal)) select.value = currentVal;
+        }
+
+        window.renderInventory = () => {
+            const grid = document.getElementById('inventory-grid');
+            const emptyState = document.getElementById('inventory-empty');
+            const search = (document.getElementById('search-inventory').value || '').toLowerCase().trim();
+            const brandFilter = document.getElementById('filter-brand').value;
+            const stockFilter = document.getElementById('filter-stock').value;
+
+            const filtered = window.appState.products.filter(p => {
+                const matchText = `${p.brand} ${p.flavor} ${p.puffs}`.toLowerCase().includes(search);
+                const matchBrand = brandFilter === 'ALL' || p.brand === brandFilter;
+                const stock = Number(p.stock) || 0;
+                let matchStock = true;
+                if (stockFilter === 'AVAILABLE') matchStock = stock > 0;
+                if (stockFilter === 'LOW') matchStock = stock > 0 && stock <= 2;
+                if (stockFilter === 'OUT') matchStock = stock === 0;
+                return matchText && matchBrand && matchStock;
+            });
+
+            if (filtered.length === 0) {
+                grid.innerHTML = '';
+                emptyState.classList.remove('hidden');
+                return;
+            }
+
+            emptyState.classList.add('hidden');
+            grid.innerHTML = filtered.map(p => {
+                const stock = Number(p.stock) || 0;
+                const cost = Number(p.cost) || 0;
+                const price = Number(p.price) || 0;
+                const unitProfit = price - cost;
+
+                let statusBadge = '';
+                let cardBorder = 'border-cyber-border hover:border-gray-700';
+
+                if (stock === 0) {
+                    statusBadge = `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase bg-red-500/15 text-red-400 border border-red-500/30">Agotado</span>`;
+                    cardBorder = 'border-red-500/30 opacity-85';
+                } else if (stock <= 2) {
+                    statusBadge = `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase bg-amber-500/15 text-amber-400 border border-amber-500/30 animate-pulse">Stock Bajo</span>`;
+                    cardBorder = 'border-amber-500/40';
+                } else {
+                    statusBadge = `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase bg-cyber-neonDim text-cyber-neon">Disponible</span>`;
+                }
+
+                return `
+                <div class="bg-cyber-card border ${cardBorder} rounded-2xl p-4 flex flex-col justify-between transition group">
+                    <div>
+                        <div class="flex items-start justify-between gap-2">
+                            <div>
+                                <span class="text-xs font-extrabold uppercase tracking-wider text-cyber-cyan">${escapeHtml(p.brand)}</span>
+                                <span class="text-[11px] text-gray-500 ml-1.5">${escapeHtml(p.puffs || '')}</span>
+                            </div>
+                            ${statusBadge}
+                        </div>
+
+                        <h3 class="text-base font-bold text-white mt-1 leading-snug">${escapeHtml(p.flavor)}</h3>
+
+                        <div class="mt-3 grid grid-cols-3 gap-2 p-2.5 rounded-xl bg-cyber-bg border border-cyber-border text-center">
+                            <div>
+                                <span class="block text-[10px] text-gray-500">Costo</span>
+                                <span class="font-mono text-xs font-semibold text-gray-300">${formatMoney(cost)}</span>
+                            </div>
+                            <div class="border-x border-cyber-border">
+                                <span class="block text-[10px] text-gray-500">Venta</span>
+                                <span class="font-mono text-xs font-bold text-white">${formatMoney(price)}</span>
+                            </div>
+                            <div>
+                                <span class="block text-[10px] text-gray-500">Ganancia</span>
+                                <span class="font-mono text-xs font-bold text-cyber-neon">+${formatMoney(unitProfit)}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Stock Controls & Actions -->
+                    <div class="mt-4 pt-3 border-t border-cyber-border/70 flex items-center justify-between gap-2">
+                        <div class="flex items-center gap-1.5 bg-cyber-bg border border-cyber-border rounded-xl p-1">
+                            <button onclick="adjustStock('${p.id}', -1)" ${stock <= 0 ? 'disabled' : ''} class="w-7 h-7 rounded-lg flex items-center justify-center bg-gray-800 hover:bg-gray-700 disabled:opacity-40 text-white font-bold transition active:scale-90" title="Restar 1">
+                                -
+                            </button>
+                            <span class="w-8 text-center font-mono font-extrabold text-sm ${stock === 0 ? 'text-red-400' : stock <= 2 ? 'text-amber-400' : 'text-white'}">${stock}</span>
+                            <button onclick="adjustStock('${p.id}', 1)" class="w-7 h-7 rounded-lg flex items-center justify-center bg-gray-800 hover:bg-cyber-neon hover:text-black text-white font-bold transition active:scale-90" title="Sumar 1">
+                                +
+                            </button>
+                        </div>
+
+                        <div class="flex items-center gap-1.5">
+                            <button onclick="openSaleModal('${p.id}')" ${stock <= 0 ? 'disabled' : ''} class="px-2.5 py-1.5 rounded-xl bg-cyber-neonDim hover:bg-cyber-neon text-cyber-neon hover:text-black disabled:opacity-30 disabled:pointer-events-none text-xs font-bold transition" title="Vender este vape">
+                                Vender
+                            </button>
+                            <button onclick="openProductModal('${p.id}')" class="p-1.5 rounded-xl bg-gray-800 hover:bg-gray-700 text-gray-300 transition" title="Editar">
+                                <i data-lucide="pencil" class="w-3.5 h-3.5"></i>
+                            </button>
+                            <button onclick="confirmDeleteProduct('${p.id}')" class="p-1.5 rounded-xl bg-gray-800 hover:bg-red-500/20 text-gray-400 hover:text-red-400 transition" title="Eliminar">
+                                <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                `;
+            }).join('');
+            lucide.createIcons();
+        };
+
+        window.renderMovements = () => {
+            const container = document.getElementById('movements-list');
+            const emptyState = document.getElementById('movements-empty');
+            const filter = window.appState.movementFilter;
+            const search = (document.getElementById('search-movements').value || '').toLowerCase().trim();
+
+            const filtered = window.appState.sales.filter(s => {
+                if (filter === 'PAID' && s.status !== 'PAID') return false;
+                if (filter === 'FIADO' && s.status !== 'FIADO') return false;
+                const text = `${s.productName} ${s.customerName || ''} ${s.partner}`.toLowerCase();
+                return text.includes(search);
+            });
+
+            if (filtered.length === 0) {
+                container.innerHTML = '';
+                emptyState.classList.remove('hidden');
+                return;
+            }
+
+            emptyState.classList.add('hidden');
+            container.innerHTML = filtered.map(s => {
+                const isFiado = s.status === 'FIADO';
+                const isCompa = s.partner === 'COMPA';
+                const dateObj = new Date(s.createdAt || Date.now());
+                const dateStr = dateObj.toLocaleDateString('es-MX', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
+                const profit = (Number(s.totalPrice) || 0) - (Number(s.totalCost) || 0);
+
+                const partnerBadge = isCompa
+                    ? `<span class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-cyber-purpleDim text-cyber-purple border border-cyber-purple/30">Mi Compa</span>`
+                    : `<span class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-cyber-cyanDim text-cyber-cyan border border-cyber-cyan/30">Tú</span>`;
+
+                const statusBadge = isFiado
+                    ? `<span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-500/15 text-amber-400 border border-amber-500/30 flex items-center gap-1"><i data-lucide="clock" class="w-3 h-3"></i> Fiado Pendiente</span>`
+                    : `<span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-cyber-neonDim text-cyber-neon border border-cyber-neon/30">${s.paymentMethod === 'TRANSFERENCIA' ? 'Transferencia' : 'Efectivo'}</span>`;
+
+                return `
+                <div class="bg-cyber-card border ${isFiado ? 'border-amber-500/40' : 'border-cyber-border'} rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div class="space-y-1">
+                        <div class="flex flex-wrap items-center gap-2">
+                            <span class="font-bold text-white text-sm sm:text-base">${s.qty}x ${escapeHtml(s.productName)}</span>
+                            ${partnerBadge}
+                            ${statusBadge}
+                        </div>
+                        <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-gray-400">
+                            <span>${dateStr}</span>
+                            ${s.customerName ? `<span class="text-gray-200 font-medium">Cliente: <strong class="text-white">${escapeHtml(s.customerName)}</strong></span>` : ''}
+                            <span class="text-emerald-400/90 font-mono">Ganancia: +${formatMoney(profit)}</span>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center justify-between sm:justify-end gap-3 pt-2 sm:pt-0 border-t sm:border-t-0 border-cyber-border">
+                        <div class="text-left sm:text-right">
+                            <span class="block text-lg font-extrabold font-mono tabular-nums ${isFiado ? 'text-amber-400' : 'text-white'}">${formatMoney(s.totalPrice)}</span>
+                        </div>
+
+                        <div class="flex items-center gap-2">
+                            ${isFiado ? `
+                                <button onclick="openSettleDebtModal('${s.id}')" class="px-3 py-1.5 rounded-xl bg-cyber-neon hover:bg-[#00e65c] text-black font-bold text-xs shadow neon-glow transition active:scale-95">
+                                    Marcar Pagado
+                                </button>
+                            ` : ''}
+                            <button onclick="confirmCancelSale('${s.id}')" class="p-2 rounded-xl bg-gray-800 hover:bg-red-500/20 text-gray-400 hover:text-red-400 transition" title="Anular venta y devolver al stock">
+                                <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                `;
+            }).join('');
+            lucide.createIcons();
+        };
+
+        // =====================================================================
+        // CRUD OPERATIONS (INVENTORY & SALES)
+        // =====================================================================
+        window.handleSaveProduct = async (e) => {
+            e.preventDefault();
+            const id = document.getElementById('prod-id').value;
+            const data = {
+                brand: document.getElementById('prod-brand').value.trim(),
+                puffs: document.getElementById('prod-puffs').value.trim(),
+                flavor: document.getElementById('prod-flavor').value.trim(),
+                cost: Number(document.getElementById('prod-cost').value) || 0,
+                price: Number(document.getElementById('prod-price').value) || 0,
+                stock: Math.max(0, parseInt(document.getElementById('prod-stock').value, 10) || 0),
+                updatedAt: Date.now()
+            };
+
+            closeModal('modal-product');
+
+            if (window.appState.isOfflineDemo) {
+                if (id) {
+                    const idx = window.appState.products.findIndex(p => p.id === id);
+                    if (idx !== -1) window.appState.products[idx] = { id, ...data };
+                } else {
+                    window.appState.products.push({ id: 'prod-' + Date.now(), ...data });
+                }
+                updateBrandFilterOptions();
+                recalculateAll();
+                showToast(id ? "Vape actualizado" : "Vape agregado al inventario");
+                return;
+            }
+
+            try {
+                if (!window.appState.user) return;
+                if (id) {
+                    await updateDoc(getPublicDoc('vape_products', id), data);
+                    showToast("Vape actualizado correctamente");
+                } else {
+                    await addDoc(getPublicCol('vape_products'), { ...data, createdAt: Date.now() });
+                    showToast("Nuevo vape agregado al catálogo");
+                }
+            } catch (err) {
+                console.error(err);
+                showToast("Error al guardar producto", "error");
+            }
+        };
+
+        window.adjustStock = async (productId, delta) => {
+            const product = window.appState.products.find(p => p.id === productId);
+            if (!product) return;
+            const newStock = Math.max(0, (Number(product.stock) || 0) + delta);
+
+            if (window.appState.isOfflineDemo) {
+                product.stock = newStock;
+                recalculateAll();
+                return;
+            }
+
+            try {
+                if (!window.appState.user) return;
+                await updateDoc(getPublicDoc('vape_products', productId), { stock: newStock });
+            } catch (err) {
+                showToast("No se pudo actualizar el stock", "error");
+            }
+        };
+
+        window.confirmDeleteProduct = (productId) => {
+            const prod = window.appState.products.find(p => p.id === productId);
+            if (!prod) return;
+            openConfirmModal(
+                "Eliminar Vape",
+                `¿Seguro que deseas eliminar "${prod.brand} - ${prod.flavor}" del catálogo?`,
+                async () => {
+                    if (window.appState.isOfflineDemo) {
+                        window.appState.products = window.appState.products.filter(p => p.id !== productId);
+                        recalculateAll();
+                        showToast("Producto eliminado");
+                        return;
+                    }
+                    try {
+                        if (!window.appState.user) return;
+                        await deleteDoc(getPublicDoc('vape_products', productId));
+                        showToast("Producto eliminado del inventario");
+                    } catch (err) {
+                        showToast("Error al eliminar producto", "error");
+                    }
+                }
+            );
+        };
+
+        // Sale Modal Helpers
+        window.openSaleModal = (preselectedProductId = '') => {
+            const select = document.getElementById('sale-product-id');
+            const availableProducts = window.appState.products.filter(p => (Number(p.stock) || 0) > 0);
+
+            if (availableProducts.length === 0) {
+                showToast("No hay vapes con stock disponible para vender", "warning");
+                return;
+            }
+
+            select.innerHTML = '<option value="">-- Elige un vape con stock --</option>';
+            availableProducts.forEach(p => {
+                const opt = document.createElement('option');
+                opt.value = p.id;
+                opt.textContent = `${p.brand} - ${p.flavor} (${p.stock} disp.) - ${formatMoney(p.price)}`;
+                select.appendChild(opt);
+            });
+
+            document.getElementById('form-sale').reset();
+            if (preselectedProductId) {
+                select.value = preselectedProductId;
+            }
+            onSaleProductChange();
+            toggleCustomerField();
+            openModal('modal-sale');
+        };
+
+        window.onSaleProductChange = () => {
+            const prodId = document.getElementById('sale-product-id').value;
+            const prod = window.appState.products.find(p => p.id === prodId);
+            const qtyInput = document.getElementById('sale-qty');
+            const hint = document.getElementById('sale-stock-hint');
+
+            if (!prod) {
+                hint.textContent = '';
+                document.getElementById('sale-total-price').value = '';
+                updateSaleProfitPreview();
+                return;
+            }
+
+            const maxStock = Number(prod.stock) || 1;
+            qtyInput.max = maxStock;
+            if (Number(qtyInput.value) > maxStock) qtyInput.value = maxStock;
+            hint.textContent = `Stock disponible: ${maxStock} unidades • Costo unitario: ${formatMoney(prod.cost)}`;
+            updateSaleSuggestedTotal();
+        };
+
+        window.updateSaleSuggestedTotal = () => {
+            const prodId = document.getElementById('sale-product-id').value;
+            const prod = window.appState.products.find(p => p.id === prodId);
+            const qty = Math.max(1, parseInt(document.getElementById('sale-qty').value, 10) || 1);
+
+            if (prod) {
+                document.getElementById('sale-total-price').value = (Number(prod.price) || 0) * qty;
+            }
+            updateSaleProfitPreview();
+        };
+
+        window.updateSaleProfitPreview = () => {
+            const prodId = document.getElementById('sale-product-id').value;
+            const prod = window.appState.products.find(p => p.id === prodId);
+            const qty = Math.max(1, parseInt(document.getElementById('sale-qty').value, 10) || 1);
+            const totalEntered = Number(document.getElementById('sale-total-price').value) || 0;
+            const previewEl = document.getElementById('sale-profit-preview');
+
+            if (!prod) {
+                previewEl.textContent = '$0';
+                return;
+            }
+
+            const profit = totalEntered - ((Number(prod.cost) || 0) * qty);
+            previewEl.textContent = (profit >= 0 ? '+' : '') + formatMoney(profit);
+            previewEl.className = `font-mono font-bold ${profit >= 0 ? 'text-cyber-neon' : 'text-red-400'}`;
+        };
+
+        window.toggleCustomerField = () => {
+            const method = document.querySelector('input[name="sale-payment"]:checked').value;
+            const label = document.getElementById('sale-customer-label');
+            const input = document.getElementById('sale-customer');
+
+            if (method === 'FIADO') {
+                label.textContent = 'Nombre del Cliente que debe (Obligatorio) *';
+                label.classList.add('text-amber-400');
+                input.required = true;
+                input.placeholder = 'Escribe quién se lo llevó fiado...';
+            } else {
+                label.textContent = 'Nombre del Cliente (Opcional)';
+                label.classList.remove('text-amber-400');
+                input.required = false;
+                input.placeholder = 'Ej. Venta rápida / Cliente frecuente';
+            }
+        };
+
+        window.handleRegisterSale = async (e) => {
+            e.preventDefault();
+            const prodId = document.getElementById('sale-product-id').value;
+            const prod = window.appState.products.find(p => p.id === prodId);
+            if (!prod) return;
+
+            const qty = parseInt(document.getElementById('sale-qty').value, 10) || 1;
+            const currentStock = Number(prod.stock) || 0;
+
+            if (qty > currentStock) {
+                showToast(`Solo hay ${currentStock} unidades disponibles`, "warning");
+                return;
+            }
+
+            const totalPrice = Number(document.getElementById('sale-total-price').value) || 0;
+            const partner = document.querySelector('input[name="sale-partner"]:checked').value;
+            const paymentMethod = document.querySelector('input[name="sale-payment"]:checked').value;
+            const customerName = document.getElementById('sale-customer').value.trim();
+
+            const saleRecord = {
+                productId: prod.id,
+                productName: `${prod.brand} ${prod.flavor}`,
+                qty,
+                unitCost: Number(prod.cost) || 0,
+                totalCost: (Number(prod.cost) || 0) * qty,
+                totalPrice,
+                partner,
+                status: paymentMethod === 'FIADO' ? 'FIADO' : 'PAID',
+                paymentMethod: paymentMethod === 'FIADO' ? 'PENDIENTE' : paymentMethod,
+                customerName,
+                createdAt: Date.now()
+            };
+
+            closeModal('modal-sale');
+
+            if (window.appState.isOfflineDemo) {
+                prod.stock = currentStock - qty;
+                window.appState.sales.unshift({ id: 'sale-' + Date.now(), ...saleRecord });
+                recalculateAll();
+                showToast(saleRecord.status === 'FIADO' ? "Fiado registrado correctamente" : "¡Venta registrada!");
+                return;
+            }
+
+            try {
+                if (!window.appState.user) return;
+                await addDoc(getPublicCol('vape_sales'), saleRecord);
+                await updateDoc(getPublicDoc('vape_products', prod.id), {
+                    stock: currentStock - qty
+                });
+                showToast(saleRecord.status === 'FIADO' ? "Fiado registrado y descontado del stock" : "¡Venta registrada con éxito!");
+            } catch (err) {
+                console.error(err);
+                showToast("Error al registrar la venta", "error");
+            }
+        };
+
+        // Settle Fiado Debt
+        window.openSettleDebtModal = (saleId) => {
+            const sale = window.appState.sales.find(s => s.id === saleId);
+            if (!sale) return;
+
+            document.getElementById('settle-sale-id').value = sale.id;
+            document.getElementById('settle-customer-name').textContent = sale.customerName || 'Cliente sin nombre';
+            document.getElementById('settle-amount-display').textContent = `${formatMoney(sale.totalPrice)} (${sale.qty}x ${sale.productName})`;
+            openModal('modal-settle-debt');
+        };
+
+        window.handleSettleDebt = async (e) => {
+            e.preventDefault();
+            const saleId = document.getElementById('settle-sale-id').value;
+            const partner = document.querySelector('input[name="settle-partner"]:checked').value;
+            const method = document.querySelector('input[name="settle-method"]:checked').value;
+
+            closeModal('modal-settle-debt');
+
+            if (window.appState.isOfflineDemo) {
+                const sale = window.appState.sales.find(s => s.id === saleId);
+                if (sale) {
+                    sale.status = 'PAID';
+                    sale.partner = partner;
+                    sale.paymentMethod = method;
+                    sale.paidAt = Date.now();
+                }
+                recalculateAll();
+                showToast("¡Deuda cobrada y sumada a caja!");
+                return;
+            }
+
+            try {
+                if (!window.appState.user) return;
+                await updateDoc(getPublicDoc('vape_sales', saleId), {
+                    status: 'PAID',
+                    partner,
+                    paymentMethod: method,
+                    paidAt: Date.now()
+                });
+                showToast("¡Fiado marcado como pagado!");
+            } catch (err) {
+                showToast("Error al actualizar el fiado", "error");
+            }
+        };
+
+        // Cancel / Revert Sale
+        window.confirmCancelSale = (saleId) => {
+            const sale = window.appState.sales.find(s => s.id === saleId);
+            if (!sale) return;
+
+            openConfirmModal(
+                "Anular Movimiento",
+                `¿Anular esta venta (${sale.qty}x ${sale.productName})? Se devolverán ${sale.qty} unidad(es) al inventario y se descontará de caja.`,
+                async () => {
+                    const prod = window.appState.products.find(p => p.id === sale.productId);
+
+                    if (window.appState.isOfflineDemo) {
+                        if (prod) prod.stock = (Number(prod.stock) || 0) + (Number(sale.qty) || 0);
+                        window.appState.sales = window.appState.sales.filter(s => s.id !== saleId);
+                        recalculateAll();
+                        showToast("Venta anulada y stock restaurado");
+                        return;
+                    }
+
+                    try {
+                        if (!window.appState.user) return;
+                        await deleteDoc(getPublicDoc('vape_sales', saleId));
+                        if (prod) {
+                            await updateDoc(getPublicDoc('vape_products', prod.id), {
+                                stock: (Number(prod.stock) || 0) + (Number(sale.qty) || 0)
+                            });
+                        }
+                        showToast("Venta anulada y stock devuelto");
+                    } catch (err) {
+                        showToast("Error al anular la venta", "error");
+                    }
+                }
+            );
+        };
+
+        // =====================================================================
+        // CORTE DE CAJA & PARTNER INVESTMENTS
+        // =====================================================================
+        window.openCorteModal = () => {
+            const m = window.corteMetrics || {
+                cashCollectedTotal: 0,
+                realizedCostRecovered: 0,
+                realizedProfit: 0,
+                yoCash: 0,
+                compaCash: 0,
+                yoInvested: 0,
+                compaInvested: 0
+            };
+
+            const halfProfit = m.realizedProfit / 2;
+
+            // Total money available in boxes right now = m.cashCollectedTotal
+            // Note: cashCollectedTotal = realizedCostRecovered + realizedProfit.
+            // Fair distribution of the currently collected cash:
+            // First, proportional or exact recovery of invested capital from realizedCostRecovered,
+            // plus 50% of realizedProfit each.
+            const totalInvested = m.yoInvested + m.compaInvested;
+            let yoCapitalShare = 0;
+            let compaCapitalShare = 0;
+
+            if (totalInvested > 0) {
+                yoCapitalShare = m.realizedCostRecovered * (m.yoInvested / totalInvested);
+                compaCapitalShare = m.realizedCostRecovered * (m.compaInvested / totalInvested);
+            } else {
+                yoCapitalShare = m.realizedCostRecovered / 2;
+                compaCapitalShare = m.realizedCostRecovered / 2;
+            }
+
+            const yoTarget = yoCapitalShare + halfProfit;
+            const compaTarget = compaCapitalShare + halfProfit;
+            const diff = m.yoCash - yoTarget; // Positive means Yo has excess and owes Compa
+
+            document.getElementById('corte-total-collected').textContent = formatMoney(m.cashCollectedTotal);
+            document.getElementById('corte-cost-recovered').textContent = formatMoney(m.realizedCostRecovered);
+            document.getElementById('corte-net-profit').textContent = formatMoney(m.realizedProfit);
+            document.getElementById('corte-half-profit').textContent = formatMoney(halfProfit);
+
+            document.getElementById('corte-yo-has').textContent = formatMoney(m.yoCash);
+            document.getElementById('corte-yo-inv').textContent = formatMoney(m.yoInvested);
+            document.getElementById('corte-yo-target').textContent = formatMoney(yoTarget);
+
+            document.getElementById('corte-compa-has').textContent = formatMoney(m.compaCash);
+            document.getElementById('corte-compa-inv').textContent = formatMoney(m.compaInvested);
+            document.getElementById('corte-compa-target').textContent = formatMoney(compaTarget);
+
+            const verdictText = document.getElementById('corte-verdict-text');
+            const verdictSub = document.getElementById('corte-verdict-sub');
+
+            if (Math.abs(diff) < 1) {
+                verdictText.textContent = "¡Están completamente tablas!";
+                verdictSub.textContent = "Ninguno tiene que transferirle diferencia al otro.";
+            } else if (diff > 0) {
+                verdictText.innerHTML = `<span class="text-cyber-cyan">TÚ</span> debes transferirle <span class="text-cyber-neon font-mono">${formatMoney(diff)}</span> a <span class="text-cyber-purple">MI COMPA</span>`;
+                verdictSub.textContent = `Así ambos recuperan su parte de inversión proporcional y se quedan con ${formatMoney(halfProfit)} de ganancia cada uno.`;
+            } else {
+                verdictText.innerHTML = `<span class="text-cyber-purple">MI COMPA</span> debe transferirte <span class="text-cyber-neon font-mono">${formatMoney(Math.abs(diff))}</span> a <span class="text-cyber-cyan">TI</span>`;
+                verdictSub.textContent = `Así ambos recuperan su parte de inversión proporcional y se quedan con ${formatMoney(halfProfit)} de ganancia cada uno.`;
+            }
+
+            openModal('modal-corte');
+        };
+
+        window.openInvestmentModal = () => {
+            closeModal('modal-corte');
+            document.getElementById('input-yo-invested').value = window.appState.settings.yoInvested || 0;
+            document.getElementById('input-compa-invested').value = window.appState.settings.compaInvested || 0;
+            openModal('modal-investment');
+        };
+
+        window.handleSaveInvestment = async (e) => {
+            e.preventDefault();
+            const yoInvested = Math.max(0, Number(document.getElementById('input-yo-invested').value) || 0);
+            const compaInvested = Math.max(0, Number(document.getElementById('input-compa-invested').value) || 0);
+
+            closeModal('modal-investment');
+
+            if (window.appState.isOfflineDemo) {
+                window.appState.settings = { yoInvested, compaInvested };
+                recalculateAll();
+                showToast("Inversión de socios actualizada");
+                return;
+            }
+
+            try {
+                if (!window.appState.user) return;
+                await setDoc(getPublicDoc('vape_settings', 'partners_config'), {
+                    yoInvested,
+                    compaInvested,
+                    updatedAt: Date.now()
+                }, { merge: true });
+                showToast("Inversión de socios guardada");
+            } catch (err) {
+                showToast("Error al guardar inversión", "error");
+            }
+        };
+
+        // =====================================================================
+        // BACKUP, EXPORT & RESET
+        // =====================================================================
+        window.exportDataJSON = () => {
+            const payload = {
+                exportedAt: new Date().toISOString(),
+                settings: window.appState.settings,
+                products: window.appState.products,
+                sales: window.appState.sales
+            };
+            const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `respaldo-vapecontrol-${new Date().toISOString().slice(0, 10)}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+            showToast("Respaldo JSON descargado");
+        };
+
+        window.exportSalesCSV = () => {
+            const headers = ['Fecha', 'Producto', 'Cantidad', 'Costo Total', 'Precio Venta', 'Ganancia', 'Socio', 'Estado', 'Metodo', 'Cliente'];
+            const rows = window.appState.sales.map(s => [
+                new Date(s.createdAt || Date.now()).toLocaleString('es-MX'),
+                `"${(s.productName || '').replace(/"/g, '""')}"`,
+                s.qty,
+                s.totalCost,
+                s.totalPrice,
+                (Number(s.totalPrice) || 0) - (Number(s.totalCost) || 0),
+                s.partner === 'COMPA' ? 'Mi Compa' : 'Yo',
+                s.status,
+                s.paymentMethod,
+                `"${(s.customerName || '').replace(/"/g, '""')}"`
+            ]);
+            const csvContent = "data:text/csv;charset=utf-8," + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement('a');
+            link.setAttribute('href', encodedUri);
+            link.setAttribute('download', `ventas-vapes-${new Date().toISOString().slice(0, 10)}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            showToast("Reporte CSV descargado");
+        };
+
+        window.handleResetDatabase = () => {
+            closeModal('modal-data');
+            openConfirmModal(
+                "Reiniciar Todo el Negocio",
+                "¿Estás completamente seguro? Se borrará todo el inventario, historial de ventas, fiados y aportes de ambos socios. Te sugerimos descargar un respaldo JSON primero.",
+                async () => {
+                    if (window.appState.isOfflineDemo) {
+                        window.appState.products = [];
+                        window.appState.sales = [];
+                        window.appState.settings = { yoInvested: 0, compaInvested: 0 };
+                        recalculateAll();
+                        showToast("Todos los datos fueron reiniciados");
+                        return;
+                    }
+                    try {
+                        if (!window.appState.user) return;
+                        const prodsSnap = await getDocs(getPublicCol('vape_products'));
+                        for (const d of prodsSnap.docs) {
+                            await deleteDoc(getPublicDoc('vape_products', d.id));
+                        }
+                        const salesSnap = await getDocs(getPublicCol('vape_sales'));
+                        for (const d of salesSnap.docs) {
+                            await deleteDoc(getPublicDoc('vape_sales', d.id));
+                        }
+                        await setDoc(getPublicDoc('vape_settings', 'partners_config'), {
+                            yoInvested: 0,
+                            compaInvested: 0
+                        });
+                        showToast("Base de datos reiniciada en cero");
+                    } catch (err) {
+                        showToast("Error al reiniciar datos", "error");
+                    }
+                }
+            );
+        };
+
+        // =====================================================================
+        // UI NAVIGATION & MODAL UTILITIES
+        // =====================================================================
+        window.switchTab = (tabName) => {
+            window.appState.currentTab = tabName;
+            const invSec = document.getElementById('section-inventory');
+            const movSec = document.getElementById('section-movements');
+            const invBtn = document.getElementById('tab-inventory');
+            const movBtn = document.getElementById('tab-movements');
+
+            if (tabName === 'inventory') {
+                invSec.classList.remove('hidden');
+                movSec.classList.add('hidden');
+                invBtn.className = 'tab-btn py-3 px-2 border-b-2 border-cyber-neon text-cyber-neon font-bold text-sm flex items-center gap-2 whitespace-nowrap transition';
+                movBtn.className = 'tab-btn py-3 px-2 border-b-2 border-transparent text-gray-400 hover:text-gray-200 font-semibold text-sm flex items-center gap-2 whitespace-nowrap transition';
+            } else {
+                invSec.classList.add('hidden');
+                movSec.classList.remove('hidden');
+                movBtn.className = 'tab-btn py-3 px-2 border-b-2 border-cyber-neon text-cyber-neon font-bold text-sm flex items-center gap-2 whitespace-nowrap transition';
+                invBtn.className = 'tab-btn py-3 px-2 border-b-2 border-transparent text-gray-400 hover:text-gray-200 font-semibold text-sm flex items-center gap-2 whitespace-nowrap transition';
+            }
+        };
+
+        window.setMovementFilter = (filterType) => {
+            window.appState.movementFilter = filterType;
+            ['ALL', 'PAID', 'FIADO'].forEach(f => {
+                const btn = document.getElementById(`mov-filter-${f}`);
+                if (f === filterType) {
+                    btn.className = 'mov-filter-btn px-3.5 py-1.5 rounded-lg text-xs font-bold bg-cyber-neon text-black transition flex items-center gap-1.5';
+                } else {
+                    btn.className = 'mov-filter-btn px-3.5 py-1.5 rounded-lg text-xs font-semibold text-gray-400 hover:text-white transition flex items-center gap-1.5';
+                }
+            });
+            renderMovements();
+        };
+
+        window.openProductModal = (productId = '') => {
+            const form = document.getElementById('form-product');
+            form.reset();
+            document.getElementById('prod-id').value = productId;
+
+            if (productId) {
+                const prod = window.appState.products.find(p => p.id === productId);
+                if (prod) {
+                    document.getElementById('modal-product-title').innerHTML = `<i data-lucide="pencil" class="w-5 h-5 text-cyber-neon"></i> Editar Vape`;
+                    document.getElementById('prod-brand').value = prod.brand || '';
+                    document.getElementById('prod-puffs').value = prod.puffs || '';
+                    document.getElementById('prod-flavor').value = prod.flavor || '';
+                    document.getElementById('prod-cost').value = prod.cost || 0;
+                    document.getElementById('prod-price').value = prod.price || 0;
+                    document.getElementById('prod-stock').value = prod.stock || 0;
+                }
+            } else {
+                document.getElementById('modal-product-title').innerHTML = `<i data-lucide="plus-circle" class="w-5 h-5 text-cyber-neon"></i> Agregar Nuevo Vape`;
+            }
+            lucide.createIcons();
+            openModal('modal-product');
+        };
+
+        window.openDataModal = () => openModal('modal-data');
+        window.openModal = (id) => document.getElementById(id).classList.remove('hidden');
+        window.closeModal = (id) => document.getElementById(id).classList.add('hidden');
+
+        window.openConfirmModal = (title, message, onConfirm) => {
+            document.getElementById('confirm-title').textContent = title;
+            document.getElementById('confirm-message').textContent = message;
+            const yesBtn = document.getElementById('confirm-yes-btn');
+            yesBtn.onclick = () => {
+                closeModal('modal-confirm');
+                onConfirm();
+            };
+            openModal('modal-confirm');
+        };
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;');
+        }
+
+        // Boot Application
+        window.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+            initFirebase();
+        });
+    </script>
+</body>
+</html>
